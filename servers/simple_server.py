@@ -1,11 +1,11 @@
 """
 Simplified Demo Server - No External API Keys Required
 
-This is a simplified version that only uses the Agno Docs MCP server
+This is a simplified version that only uses the Phoenix Docs MCP server
 which doesn't require any API keys. Perfect for quick testing!
 
 Architecture:
-- Consumes: Agno Docs MCP only (no API key needed)
+- Consumes: Phoenix Docs MCP only (no API key needed)
 - Exposes: AgentOS MCP server at /mcp endpoint
 """
 
@@ -33,10 +33,10 @@ db = SqliteDb(db_file=str(db_path))
 # Single MCP Server (no API keys required)
 # ==========================================
 
-# Agno Docs MCP Server - for documentation
-agno_docs_mcp = MCPTools(
+# Phoenix Docs MCP Server - for documentation
+phoenix_docs_mcp = MCPTools(
     transport="streamable-http",
-    url="https://docs.agno.com/mcp",
+    url="https://arizeai-433a7140.mintlify.app/mcp",
     timeout_seconds=60,
 )
 
@@ -46,14 +46,14 @@ agno_docs_mcp = MCPTools(
 
 doc_support_agent = Agent(
     id="doc_support_agent",
-    name="Documentation Support Agent",
+    name="Phoenix Documentation Support Agent",
     model=Claude(id="claude-sonnet-4-5"),
     db=db,
-    tools=[agno_docs_mcp],  # Only Agno Docs MCP
+    tools=[phoenix_docs_mcp],  # Only Phoenix Docs MCP
     instructions=[
-        "You are a helpful Documentation Support Agent for the Agno AI framework.",
-        "You have access to Agno documentation to answer technical questions.",
-        "Help users understand how to use Agno features and capabilities.",
+        "You are a helpful Documentation Support Agent for the Phoenix AI observability platform.",
+        "You have access to Phoenix documentation to answer technical questions about tracing, evaluation, and observability.",
+        "Help users understand how to use Phoenix features and capabilities.",
     ],
     add_history_to_context=True,
     num_history_runs=1,  # Reduced to save tokens
@@ -67,7 +67,7 @@ doc_support_agent = Agent(
 # ==========================================
 
 agent_os = AgentOS(
-    description="Documentation Support Agent OS - Simplified Demo",
+    description="Phoenix Documentation Support Agent OS - Simplified Demo",
     agents=[doc_support_agent],
     enable_mcp_server=True,  # This exposes /mcp endpoint
 )
@@ -82,13 +82,13 @@ if __name__ == "__main__":
     http://localhost:7777/mcp
     
     This is perfect for testing the MCP architecture without needing
-    GitHub or Brave API keys!
+    any API keys!
     """
     print("=" * 60)
-    print("Starting Documentation Support Agent OS (Simplified)")
+    print("Starting Phoenix Documentation Support Agent OS (Simplified)")
     print("=" * 60)
     print("No external API keys required!")
-    print("Using Agno Docs MCP only")
+    print("Using Phoenix Docs MCP only")
     print("=" * 60)
     print("MCP Server available at: http://localhost:7777/mcp")
     print("API Docs available at: http://localhost:7777/docs")

@@ -1,69 +1,92 @@
 # MCP Meetup Demo
 
-**An MCP Architecture Reference Implementation with a Real-World Use Case**
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![Agno Framework](https://img.shields.io/badge/Built%20with-Agno-purple.svg)](https://docs.agno.com)
 
-This project demonstrates the Model Context Protocol (MCP) architecture by building a practical community intelligence system. It shows how to create an Agent OS that both consumes multiple MCP servers AND exposes itself as an MCP server for other clients.
-
-## What We're Building
-
-**MCP Chaining Architecture:** An Agent OS that consumes multiple MCP servers (GitHub, Agno Docs, Brave Search) and exposes itself as an MCP server for team clients to query.
-
-**Real-World Use Case:** Community intelligence system that analyzes GitHub issues at scale and routes actionable insights to different teams:
-- **PM Team:** Feature requests prioritized by demand and business impact
-- **DevRel Team:** Documentation gaps identified from user confusion patterns  
-- **Sales Team:** Common objections blocking enterprise deals
-- **Engineers:** Critical bugs affecting production deployments
+A production-ready MCP architecture reference implementation demonstrating how to build AI agents that consume and expose Model Context Protocol servers.
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────┐
-│         External MCP Servers (Data Sources)         │
-│                                                     │
-│  GitHub MCP    Agno Docs MCP    Brave Search MCP   │
-└─────────────────────┬───────────────────────────────┘
-                      │
-                      ↓
-┌─────────────────────────────────────────────────────┐
-│         Community Support Agent OS (Port 7777)      │
-│                                                     │
-│  • Consumes: GitHub, Docs, Search MCPs             │
-│  • Processes: Analyzes with Claude AI              │
-│  • Exposes: MCP endpoint for team clients          │
-│                                                     │
-│  Endpoint: http://localhost:7777/mcp               │
-└─────────────────────┬───────────────────────────────┘
-                      │
-                      ↓
-┌─────────────────────────────────────────────────────┐
-│           Team Clients (Specialized Queries)        │
-│                                                     │
-│  PM Team     DevRel Team    Sales Team    Engineers│
-└─────────────────────────────────────────────────────┘
-```
+<p align="center">
+  <img src="docs/architecture.png" alt="MCP Architecture" width="500">
+</p>
+
+This project demonstrates the **MCP chaining pattern**: an Agent OS that consumes multiple external MCP servers and exposes itself as an MCP server for downstream clients.
+
+## Features
+
+| Feature | Description |
+|---------|-------------|
+| MCP Consumer | Connects to GitHub, Phoenix Docs, and Search MCP servers |
+| MCP Provider | Exposes Agent OS as an MCP endpoint at `http://localhost:7777/mcp` |
+| Arize Tracing | Full observability with OpenTelemetry integration |
+| Multi-Team Support | Specialized clients for PM, DevRel, Sales, and Engineering teams |
+| Session Memory | SQLite-backed conversation history and summaries |
 
 ## Quick Start
 
+### Prerequisites
+
+- Python 3.12+
+- Node.js (for npx-based MCP servers)
+- Anthropic API key
+
+### Installation
+
 ```bash
+# Clone and setup
+git clone https://github.com/Nancy-Chauhan/mcp-meetup-demo.git
+cd mcp-meetup-demo
+python3 -m venv venv && source venv/bin/activate
+
 # Install dependencies
 pip install -U agno anthropic fastapi uvicorn sqlalchemy python-dotenv
+pip install arize-otel openinference-instrumentation-agno  # For tracing
 
 # Configure environment
 cp .env.example .env
-# Edit .env and add your ANTHROPIC_API_KEY
-
-# Terminal 1: Start the Agent OS Server
-python3 servers/simple_server.py          # Simple (Agno Docs only)
-# OR
-python3 servers/main_agent_server.py      # Full (GitHub + Docs + Search)
-
-# Terminal 2: Run a client
-python3 clients/test_client.py            # Test connection
-python3 clients/pm_team_client.py         # Product insights
-python3 clients/devrel_team_client.py     # Documentation gaps
-python3 clients/sales_team_client.py      # Sales intelligence
-python3 clients/engineers_team_client.py  # Bug prioritization
+# Edit .env and add your API keys
 ```
+
+### Running the Server
+
+```bash
+# Simple server (Phoenix Docs only - no API keys needed)
+python3 servers/simple_server.py
+
+# Full server (GitHub + Phoenix Docs + Search)
+python3 servers/main_agent_server.py
+```
+
+### Testing with Clients
+
+```bash
+python3 clients/test_client.py           # Basic connectivity test
+python3 clients/pm_team_client.py        # Product insights
+python3 clients/devrel_team_client.py    # Documentation gaps
+python3 clients/sales_team_client.py     # Sales intelligence
+python3 clients/engineers_team_client.py # Bug prioritization
+```
+
+## Configuration
+
+### Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `ANTHROPIC_API_KEY` | Yes | Claude API key from [console.anthropic.com](https://console.anthropic.com) |
+| `GITHUB_PERSONAL_ACCESS_TOKEN` | No | GitHub token for repository access |
+| `ARIZE_API_KEY` | No | Arize tracing API key |
+| `ARIZE_SPACE_ID` | No | Arize space identifier |
+
+### MCP Servers
+
+| Server | API Key Required | Description |
+|--------|------------------|-------------|
+| Phoenix Docs MCP | No | AI observability documentation |
+| GitHub MCP | Yes | Repository issues, PRs, and activity |
+| Search MCP | No | Web search capabilities |
 
 ## How It Works
 
@@ -72,55 +95,80 @@ python3 clients/engineers_team_client.py  # Bug prioritization
 ```python
 from agno.tools.mcp import MCPTools
 
-# HTTP-based MCP
-tools.append(MCPTools(
+# HTTP-based MCP (no API key needed)
+phoenix_mcp = MCPTools(
     transport="streamable-http",
-    url="https://docs.agno.com/mcp"
-))
+    url="https://arizeai-433a7140.mintlify.app/mcp"
+)
 
 # Command-based MCP
-tools.append(MCPTools(
+github_mcp = MCPTools(
     command="npx -y @modelcontextprotocol/server-github",
     env={"GITHUB_PERSONAL_ACCESS_TOKEN": token}
-))
+)
 ```
 
-### Server: Exposing as MCP Server
+### Server: Exposing as MCP
 
 ```python
 from agno.os import AgentOS
 
 agent_os = AgentOS(
     agents=[community_agent],
-    enable_mcp_server=True  # Exposes /mcp endpoint at port 7777
+    enable_mcp_server=True  # Exposes /mcp endpoint
 )
+agent_os.serve()  # Runs on port 7777
 ```
 
 ### Client: Connecting to Agent OS
 
 ```python
 from agno.tools.mcp import MCPTools
-from agno import Agent
+from agno.agent import Agent
 
 async with MCPTools(
     transport="streamable-http",
     url="http://localhost:7777/mcp"
 ) as mcp_tools:
     agent = Agent(tools=[mcp_tools])
-    await agent.aprint_response("Analyze community feedback...")
+    await agent.aprint_response("Analyze community feedback")
 ```
 
-## Configuration
+## Observability
 
-### Required
-```bash
-ANTHROPIC_API_KEY=sk-ant-...        # Get from console.anthropic.com
+This project includes Arize AX tracing for full observability:
+
+```python
+from arize.otel import register
+from openinference.instrumentation.agno import AgnoInstrumentor
+
+tracer_provider = register(
+    space_id="your-space-id",
+    api_key="your-api-key",
+    project_name="mcp-meetup-demo",
+)
+AgnoInstrumentor().instrument(tracer_provider=tracer_provider)
 ```
 
-### Optional (for full features)
-```bash
-GITHUB_PERSONAL_ACCESS_TOKEN=ghp_...  # Get from github.com/settings/tokens
-BRAVE_API_KEY=...                     # Get from brave.com/search/api
+View traces at [app.arize.com](https://app.arize.com) to see agent execution flows, LLM calls, tool invocations, and error tracking.
+
+## Project Structure
+
+```
+mcp-meetup-demo/
+├── servers/
+│   ├── main_agent_server.py   # Full Agent OS with all MCPs
+│   └── simple_server.py       # Minimal setup (no API keys)
+├── clients/
+│   ├── test_client.py         # Basic connectivity test
+│   ├── pm_team_client.py      # Product management queries
+│   ├── devrel_team_client.py  # Developer relations queries
+│   ├── sales_team_client.py   # Sales intelligence queries
+│   └── engineers_team_client.py
+├── docs/
+│   └── architecture.png       # Architecture diagram
+├── .env.example               # Environment template
+└── README.md
 ```
 
 ## Resources
@@ -128,8 +176,13 @@ BRAVE_API_KEY=...                     # Get from brave.com/search/api
 - [Agno Documentation](https://docs.agno.com)
 - [MCP Concepts](https://docs.agno.com/concepts/tools/mcp)
 - [Agent OS Guide](https://docs.agno.com/examples/agent-os)
-- [MCP Cookbook Examples](https://docs.agno.com/examples/agent-os/mcp)
+- [Phoenix Documentation](https://arize.com/docs/phoenix)
+- [Arize Tracing](https://arize.com/docs/ax)
+
+## License
+
+This project is licensed under the MIT License.
 
 ---
 
-**Built for the MCP Meetup** - Demonstrating practical MCP architecture patterns with real-world value.
+**Built for the MCP Meetup** — Demonstrating practical MCP architecture patterns with real-world value.
