@@ -1,4 +1,4 @@
-# MCP Meetup Demo
+# MCP Agent OS
 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
@@ -36,8 +36,8 @@ This project demonstrates the **MCP chaining pattern**: an Agent OS that consume
 
 ```bash
 # Clone and setup
-git clone https://github.com/Nancy-Chauhan/mcp-meetup-demo.git
-cd mcp-meetup-demo
+git clone https://github.com/Nancy-Chauhan/mcp-agent-os.git
+cd mcp-agent-os
 python3 -m venv venv && source venv/bin/activate
 
 # Install dependencies
@@ -155,7 +155,7 @@ View traces at [app.arize.com](https://app.arize.com) to see agent execution flo
 ## Project Structure
 
 ```
-mcp-meetup-demo/
+mcp-agent-os/
 ├── servers/
 │   ├── main_agent_server.py   # Full Agent OS with all MCPs
 │   └── simple_server.py       # Minimal setup (no API keys)
@@ -185,4 +185,4 @@ This project is licensed under the MIT License.
 
 ---
 
-**Built for the MCP Meetup** — Demonstrating practical MCP architecture patterns with real-world value.
+**MCP Agent OS** — Demonstrating practical MCP architecture patterns with real-world value.
